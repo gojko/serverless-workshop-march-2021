@@ -4,18 +4,18 @@ Parameters:
   GroupName:
     Type: String
     Default: ''
-    Description: 'Connection database partition key name'
-  StageName:
+    Description: 'Property for grouping connections (eg pollId)'
+  MessageSQSQueue:
     Type: String
-    Default: 'Prod'
-    Description: 'Api Stage Name'
+    Description: 'Incoming SQS Queue'
   VerboseLog:
     Type: String
     Default: ''
     Description: 'Set to something to provide detailed logging'
-  MessageSQSQueue:
+  StageName:
     Type: String
-    Description: 'Incoming SQS Queue'
+    Default: 'Prod'
+    Description: 'Api Stage Name'
 
 Resources:
   ConnectionsTable:

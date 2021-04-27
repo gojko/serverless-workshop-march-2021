@@ -160,35 +160,6 @@ this.publish = async function (pollId, results) {
 	};
 
 
-# enable XRay tracing in template
-
-Globals:
-  Api:
-    TracingEnabled: true
-  Function:
-    Tracing: "Active"
-
-# enable XRay tracing in function
-
-const AWSXRay = require('aws-xray-sdk-core'),
-  // instead of aws = require('aws-sdk')
-	aws = AWSXRay.captureAWS(require('aws-sdk'));
-
-AWSXRay.setContextMissingStrategy(() => {});
-
-exports.handler = async (event) => {
-
-# install xray library (in each function)
-
-npm install aws-xray-sdk-core
-
-# deploy with dependencies
-
-sam build
-
-sam deploy
-
-
 # add a sub-stack
 
   WebsocketsComponent:
@@ -217,13 +188,36 @@ sam deploy
 
 capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
 
-# get wscat
+# Create an index on DynamoDB
 
-npm i wscat -g
+ConnectionsTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    KeySchema:
+      - AttributeName: "connectionId"
+        KeyType: "HASH"
+    GlobalSecondaryIndexes:
+      - IndexName: "IndexByPollId"
+        KeySchema:
+          - AttributeName: "pollId" 
+            KeyType: "HASH"
+        Projection:
+          ProjectionType: KEYS_ONLY
 
-# connect to websocket URL using wscat
+# Query by index
 
-wscat -c URL
+const response = await dynamoDbClient.query({
+    IndexName: groupIndexName,
+    KeyConditionExpression: '#GroupName = :GroupName',
+    ExpressionAttributeNames: {
+      '#GroupName': 'pollId',
+    },
+    ExpressionAttributeValues: {
+      ':GroupName': '1234567' 
+    },
+    Limit: PAGE_SIZE,
+    ExclusiveStartKey: fromPageKey
+  }).promise()
 
 # Trigger a lambda function from SQS
 
@@ -237,3 +231,32 @@ SendToGroupFunction:
             Queue: !Ref MessageSQSQueue
             BatchSize: 10
             Enabled: true
+
+# enable XRay tracing in template
+
+Globals:
+  Api:
+    TracingEnabled: true
+  Function:
+    Tracing: "Active"
+
+# enable XRay tracing in function
+
+const AWSXRay = require('aws-xray-sdk-core'),
+  // instead of aws = require('aws-sdk')
+	aws = AWSXRay.captureAWS(require('aws-sdk'));
+
+AWSXRay.setContextMissingStrategy(() => {});
+
+exports.handler = async (event) => {
+
+# install xray library (in each function)
+
+npm install aws-xray-sdk-core
+
+# deploy with dependencies
+
+sam build
+
+sam deploy
+
