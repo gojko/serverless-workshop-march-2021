@@ -159,6 +159,33 @@ this.publish = async function (pollId, results) {
 		}).promise();
 	};
 
+  # enable XRay tracing in template
+
+Globals:
+  Api:
+    TracingEnabled: true
+  Function:
+    Tracing: "Active"
+
+# enable XRay tracing in function
+
+const AWSXRay = require('aws-xray-sdk-core'),
+  // instead of aws = require('aws-sdk')
+	aws = AWSXRay.captureAWS(require('aws-sdk'));
+
+AWSXRay.setContextMissingStrategy(() => {});
+
+exports.handler = async (event) => {
+
+# install xray library (in each function)
+
+npm install aws-xray-sdk-core
+
+# deploy with dependencies
+
+sam build
+
+sam deploy
 
 # add a sub-stack
 
@@ -232,31 +259,47 @@ SendToGroupFunction:
             BatchSize: 10
             Enabled: true
 
-# enable XRay tracing in template
+
+# deployment preference
+
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/automating-updates-to-serverless-apps.html
+
+# add a deployment alias/preference on a function
+
+Resources:
+ MyLambdaFunction:
+   Type: AWS::Serverless::Function
+   Properties:
+     AutoPublishAlias: Production
+     DeploymentPreference:
+       Type: Canary10Percent5Minutes 
+
+# add a deployment alias/preference globally
 
 Globals:
-  Api:
-    TracingEnabled: true
   Function:
-    Tracing: "Active"
+    AutoPublishAlias: Production
+    DeploymentPreference:
+      Type: Canary10Percent5Minutes
 
-# enable XRay tracing in function
+# Access the alias of a function
 
-const AWSXRay = require('aws-xray-sdk-core'),
-  // instead of aws = require('aws-sdk')
-	aws = AWSXRay.captureAWS(require('aws-sdk'));
+Outputs:
+  ExportResultsFunction:
+    Description: "Function for exporting results"
+    Value: !Ref ExportResultsFunctionAliasProduction
 
-AWSXRay.setContextMissingStrategy(() => {});
+# Additional things to check out
 
-exports.handler = async (event) => {
 
-# install xray library (in each function)
+* DeadLetterQueue - send async errors after retries
+* Tags - group billing info
+* FileSystemConfigs - attach shared file systems
+* ProvisionedConcurrencyConfig - keep warm lammbdas
+* ReservedConcurrentExecutions - throttle # execs
+* DeploymentPreference - deployment type
+* AutoPublishAlias - named pointers for deployment
 
-npm install aws-xray-sdk-core
+(see https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html)
 
-# deploy with dependencies
-
-sam build
-
-sam deploy
 
