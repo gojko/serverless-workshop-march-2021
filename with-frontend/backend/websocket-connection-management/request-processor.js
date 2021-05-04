@@ -1,6 +1,6 @@
 'use strict';
 module.exports = function RequestProcessor({logger, connectionRepository}) {
-	if (!logger || !connectionRepository) {
+	if (!connectionRepository) {
 		throw new Error('invalid-args');
 	}
 	this.processRequest = async (request) => {
